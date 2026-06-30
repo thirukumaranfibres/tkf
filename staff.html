@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Material Purchase Request</title>
+<style>
+  :root {
+    --bg: #f6f5f3; --surface: #ffffff; --border: #e3e1dc; --border-strong: #d4d1ca;
+    --text-primary: #2b2924; --text-secondary: #6b6860; --text-muted: #9a978e;
+    --accent: #b5651d; --accent-hover: #9c5419; --on-accent: #ffffff;
+    --success-bg: #eaf3ea; --success-text: #2f6b2f; --success-border: #c2dcc2;
+    --warning-bg: #fdf3e3; --warning-text: #9a6a13; --warning-border: #f0dba8;
+    --danger-bg: #fbeae9; --danger-text: #a8362b; --danger-border: #f0c4c0;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text-primary); }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+  .header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom: 24px; }
+  .header h1 { font-size: 22px; font-weight: 600; margin: 0; }
+  .header span { font-size: 13px; color: var(--text-muted); }
+  .tabs { display:flex; gap: 6px; margin-bottom: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; }
+  .tab { flex:1; text-align:center; padding: 9px 0; border-radius: 8px; cursor:pointer; font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+  .tab.active { background: var(--accent); color: var(--on-accent); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 16px; }
+  .section-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 14px; }
+  .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .field { display:flex; flex-direction:column; gap:6px; margin-bottom: 14px; }
+  .field label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+  .field input, .field select, .field textarea {
+    padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border-strong);
+    font-size: 14px; font-family: inherit; background: #fff; color: var(--text-primary);
+  }
+  .field textarea { resize: vertical; min-height: 70px; }
+  .req { color: #c0392b; font-size: 11px; margin-left:2px; }
+  .pills { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill { padding:6px 16px; border-radius:20px; border:1px solid var(--border-strong); cursor:pointer; font-size:13px; color:var(--text-secondary); background:#fff; }
+  .pill.sel-normal { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+  .pill.sel-medium { background: var(--warning-bg); color: var(--warning-text); border-color: var(--warning-border); }
+  .pill.sel-urgent { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-border); }
+  table { width:100%; border-collapse: collapse; table-layout: fixed; }
+  th { font-size:11px; font-weight:600; color: var(--text-muted); text-align:left; padding: 0 6px 8px 0; border-bottom: 1px solid var(--border); text-transform: uppercase; }
+  th:last-child, td:last-child { text-align:right; }
+  td { padding: 7px 6px 7px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  td input, td select { width:100%; padding: 6px 8px; font-size: 13px; border-radius: 6px; border: 1px solid var(--border-strong); }
+  .item-num { font-size:12px; color:var(--text-muted); padding-top: 12px; }
+  .rm-btn { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px; padding:4px; }
+  .rm-btn:hover { color:#c0392b; }
+  .add-btn { margin-top:10px; background:none; border:none; color: var(--accent); font-size:13px; font-weight:500; cursor:pointer; padding:4px 0; }
+  .add-btn:hover { text-decoration: underline; }
+  .summary { display:flex; justify-content:space-between; font-size: 14px; padding: 5px 0; }
+  .summary.total { font-weight:600; font-size:16px; border-top:1px solid var(--border-strong); margin-top:6px; padding-top:12px; }
+  .actions { display:flex; justify-content:flex-end; gap:10px; }
+  .btn { padding: 11px 24px; border-radius: 9px; font-size: 14px; font-weight: 600; cursor:pointer; border: none; }
+  .btn-primary { background: var(--accent); color: var(--on-accent); }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background: var(--text-primary); color:#fff; padding:12px 22px; border-radius:9px; font-size:14px; opacity:0; pointer-events:none; transition: opacity 0.2s; z-index: 999; }
+  .toast.show { opacity:1; }
+  .lookup-row { display:flex; gap:10px; margin-bottom: 18px; }
+  .lookup-row input { flex:1; }
+  .req-list { display:flex; flex-direction:column; gap: 10px; }
+  .req-item { background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px; display:flex; justify-content:space-between; align-items:center; }
+  .req-item-left .pr { font-family: monospace; font-size: 12px; color: var(--text-muted); }
+  .req-item-left .meta { font-size:14px; margin-top:2px; }
+  .req-item-left .sub { font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .status-badge { font-size:12px; font-weight:600; padding: 5px 12px; border-radius: 20px; white-space:nowrap; }
+  .status-Pending { background: var(--warning-bg); color: var(--warning-text); }
+  .status-Approved { background: var(--success-bg); color: var(--success-text); }
+  .status-Rejected { background: var(--danger-bg); color: var(--danger-text); }
+  .empty-state { text-align:center; padding: 40px 0; color: var(--text-muted); font-size: 14px; }
+  .spinner { display:inline-block; width:14px; height:14px; border:2px solid var(--border-strong); border-top-color: var(--accent); border-radius:50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right:6px;}
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <h1>Material Purchase Request</h1>
+    <span id="prPreview"></span>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tabNew" onclick="switchTab('new')">New request</div>
+    <div class="tab" id="tabStatus" onclick="switchTab('status')">My requests</div>
+  </div>
+
+  <!-- NEW REQUEST VIEW -->
+  <div id="viewNew">
+    <div class="card">
+      <p class="section-title">Request details</p>
+      <div class="grid3">
+        <div class="field">
+          <label>Requested by <span class="req">*</span></label>
+          <input type="text" id="requestedBy" placeholder="Full name" />
+        </div>
+        <div class="field">
+          <label>Department <span class="req">*</span></label>
+          <select id="department">
+            <option value="">Select department</option>
+            <option>Purchase</option>
+            <option>Pith unit</option>
+            <option>Growbag unit</option>
+            <option>Unit 1</option>
+            <option>Unit 2</option>
+            <option>Baling unit</option>
+            <option>Pith bagging</option>
+            <option>New project</option>
+            <option>Sales</option>
+            <option>HR</option>
+            <option>Accounts</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Required by date</label>
+          <input type="date" id="requiredBy" />
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Project / Cost center</label>
+          <input type="text" id="project" placeholder="e.g. PRJ-2026-14" />
+        </div>
+        <div class="field">
+          <label>Preferred supplier</label>
+          <input type="text" id="supplier" placeholder="Supplier name" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="section-title">Urgency</p>
+      <div class="pills">
+        <div class="pill sel-normal" data-u="normal" onclick="selectUrgency(this)">Normal</div>
+        <div class="pill" data-u="medium" onclick="selectUrgency(this)">Medium</div>
+        <div class="pill" data-u="urgent" onclick="selectUrgency(this)">Urgent</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="section-title">Materials</p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:24px;">#</th>
+            <th>Description</th>
+            <th style="width:80px;">SKU</th>
+            <th style="width:48px;">Qty</th>
+            <th style="width:62px;">Unit</th>
+            <th style="width:90px;">Price</th>
+            <th style="width:80px;">Subtotal</th>
+            <th style="width:26px;"></th>
+          </tr>
+        </thead>
+        <tbody id="itemsBody"></tbody>
+      </table>
+      <button class="add-btn" onclick="addRow()">+ Add item</button>
+    </div>
+
+    <div class="card">
+      <div class="summary"><span>Subtotal</span><span id="subtotalVal">₹0.00</span></div>
+      <div class="summary">
+        <span>Tax</span>
+        <span>
+          <select id="taxRate" onchange="recalc()" style="font-size:12px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-strong); margin-right:6px;">
+            <option value="0">0%</option><option value="5">5%</option>
+            <option value="12">12%</option><option value="18" selected>18%</option>
+            <option value="28">28%</option>
+          </select>
+          <span id="taxVal">₹0.00</span>
+        </span>
+      </div>
+      <div class="summary total"><span>Total</span><span id="totalVal">₹0.00</span></div>
+    </div>
+
+    <div class="card">
+      <p class="section-title">Justification</p>
+      <div class="field" style="margin-bottom:0;">
+        <label>Reason for purchase <span class="req">*</span></label>
+        <textarea id="justification" placeholder="Why are these materials needed?"></textarea>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="submitBtn" onclick="submitRequest()">Submit request</button>
+    </div>
+  </div>
+
+  <!-- STATUS VIEW -->
+  <div id="viewStatus" style="display:none;">
+    <div class="card">
+      <p class="section-title">Find your requests</p>
+      <div class="lookup-row">
+        <input type="text" id="lookupName" placeholder="Enter your name as used when submitting" />
+        <button class="btn btn-primary" onclick="loadMyRequests()">Search</button>
+      </div>
+      <div id="reqListContainer"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ⚠️ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+  const API_URL = "https://script.google.com/macros/s/AKfycbzHiPpoeUCrEN50xE3h6h3hQ23wbXL04V6uA7l4sK11wyrerlOEW3UlDG6kNH7hRYuG/exec";
+
+  let rowCount = 0;
+  let selectedUrgency = 'normal';
+
+  function switchTab(tab) {
+    document.getElementById('tabNew').classList.toggle('active', tab === 'new');
+    document.getElementById('tabStatus').classList.toggle('active', tab === 'status');
+    document.getElementById('viewNew').style.display = tab === 'new' ? 'block' : 'none';
+    document.getElementById('viewStatus').style.display = tab === 'status' ? 'block' : 'none';
+  }
+
+  function selectUrgency(el) {
+    document.querySelectorAll('.pill').forEach(p => p.className = 'pill');
+    el.classList.add('sel-' + el.dataset.u);
+    selectedUrgency = el.dataset.u;
+  }
+
+  function addRow() {
+    rowCount++;
+    const id = rowCount;
+    const tbody = document.getElementById('itemsBody');
+    const tr = document.createElement('tr');
+    tr.id = 'row-' + id;
+    tr.innerHTML = `
+      <td class="item-num">${id}</td>
+      <td><input type="text" class="desc-input" placeholder="Material description" /></td>
+      <td><input type="text" class="sku-input" placeholder="SKU" /></td>
+      <td><input type="number" class="qty-input" min="1" value="1" oninput="recalc()" /></td>
+      <td>
+        <select class="unit-sel">
+          <option>pcs</option><option>kg</option><option>m</option><option>L</option>
+          <option>box</option><option>roll</option><option>set</option><option>unit</option>
+        </select>
+      </td>
+      <td><input type="number" class="price-input" min="0" step="0.01" value="0" oninput="recalc()" /></td>
+      <td style="text-align:right; padding-top:12px;" class="sub-cell">₹0.00</td>
+      <td><button class="rm-btn" onclick="removeRow(${id})">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+    recalc();
+  }
+
+  function removeRow(id) {
+    const row = document.getElementById('row-' + id);
+    if (row) row.remove();
+    recalc();
+  }
+
+  function recalc() {
+    let sub = 0;
+    document.querySelectorAll('#itemsBody tr').forEach(row => {
+      const qty = parseFloat(row.querySelector('.qty-input')?.value) || 0;
+      const price = parseFloat(row.querySelector('.price-input')?.value) || 0;
+      const rowSub = qty * price;
+      sub += rowSub;
+      const cell = row.querySelector('.sub-cell');
+      if (cell) cell.textContent = '₹' + rowSub.toFixed(2);
+    });
+    const taxRate = parseFloat(document.getElementById('taxRate').value) / 100;
+    const tax = sub * taxRate;
+    document.getElementById('subtotalVal').textContent = '₹' + sub.toFixed(2);
+    document.getElementById('taxVal').textContent = '₹' + tax.toFixed(2);
+    document.getElementById('totalVal').textContent = '₹' + (sub + tax).toFixed(2);
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function collectItems() {
+    const items = [];
+    document.querySelectorAll('#itemsBody tr').forEach(row => {
+      const desc = row.querySelector('.desc-input').value.trim();
+      if (!desc) return;
+      items.push({
+        description: desc,
+        sku: row.querySelector('.sku-input').value.trim(),
+        qty: parseFloat(row.querySelector('.qty-input').value) || 0,
+        unit: row.querySelector('.unit-sel').value,
+        price: parseFloat(row.querySelector('.price-input').value) || 0
+      });
+    });
+    return items;
+  }
+
+  async function submitRequest() {
+    const requestedBy = document.getElementById('requestedBy').value.trim();
+    const department = document.getElementById('department').value;
+    const justification = document.getElementById('justification').value.trim();
+    const items = collectItems();
+
+    if (!requestedBy || !department || !justification) {
+      showToast('Please fill in all required fields');
+      return;
+    }
+    if (items.length === 0) {
+      showToast('Add at least one material with a description');
+      return;
+    }
+    if (API_URL.includes('PASTE_YOUR')) {
+      showToast('Setup needed: API_URL not configured yet');
+      return;
+    }
+
+    const subtotal = parseFloat(document.getElementById('subtotalVal').textContent.replace('₹',''));
+    const tax = parseFloat(document.getElementById('taxVal').textContent.replace('₹',''));
+    const total = parseFloat(document.getElementById('totalVal').textContent.replace('₹',''));
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Submitting...';
+
+    const payload = {
+      action: 'submit',
+      requestedBy, department,
+      project: document.getElementById('project').value.trim(),
+      requiredBy: document.getElementById('requiredBy').value,
+      urgency: selectedUrgency,
+      items, subtotal, tax, total,
+      justification,
+      supplier: document.getElementById('supplier').value.trim()
+    };
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Request submitted! Reference: ' + data.prNumber);
+        resetForm();
+      } else {
+        showToast('Something went wrong. Please try again.');
+      }
+    } catch (err) {
+      showToast('Network error — check your connection');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Submit request';
+    }
+  }
+
+  function resetForm() {
+    document.getElementById('requestedBy').value = '';
+    document.getElementById('department').value = '';
+    document.getElementById('project').value = '';
+    document.getElementById('requiredBy').value = '';
+    document.getElementById('supplier').value = '';
+    document.getElementById('justification').value = '';
+    document.getElementById('itemsBody').innerHTML = '';
+    rowCount = 0;
+    addRow(); addRow();
+    document.querySelectorAll('.pill').forEach(p => p.className = 'pill');
+    document.querySelector('[data-u="normal"]').classList.add('sel-normal');
+    selectedUrgency = 'normal';
+    recalc();
+  }
+
+  async function loadMyRequests() {
+    const name = document.getElementById('lookupName').value.trim();
+    const container = document.getElementById('reqListContainer');
+    if (!name) { showToast('Enter your name first'); return; }
+    if (API_URL.includes('PASTE_YOUR')) {
+      showToast('Setup needed: API_URL not configured yet');
+      return;
+    }
+    container.innerHTML = '<div class="empty-state"><span class="spinner"></span> Loading...</div>';
+    try {
+      const res = await fetch(`${API_URL}?action=myRequests&name=${encodeURIComponent(name)}`);
+      const data = await res.json();
+      renderRequestList(data);
+    } catch (err) {
+      container.innerHTML = '<div class="empty-state">Could not load requests. Try again.</div>';
+    }
+  }
+
+  function renderRequestList(list) {
+    const container = document.getElementById('reqListContainer');
+    if (!list || list.length === 0) {
+      container.innerHTML = '<div class="empty-state">No requests found for this name.</div>';
+      return;
+    }
+    container.innerHTML = '<div class="req-list">' + list.map(r => `
+      <div class="req-item">
+        <div class="req-item-left">
+          <div class="pr">${r['PR Number']}</div>
+          <div class="meta">${r['Department']} · ₹${Number(r['Total']).toFixed(2)}</div>
+          <div class="sub">${(r['Items (JSON)'] || []).length} item(s) · ${new Date(r['Timestamp']).toLocaleDateString()}</div>
+        </div>
+        <span class="status-badge status-${r['Status']}">${r['Status']}</span>
+      </div>
+    `).join('') + '</div>';
+  }
+
+  // init
+  addRow();
+  addRow();
+  recalc();
+</script>
+</body>
+</html>

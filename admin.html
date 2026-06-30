@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Purchase Request Admin</title>
+<style>
+  :root {
+    --bg: #f6f5f3; --surface: #ffffff; --border: #e3e1dc; --border-strong: #d4d1ca;
+    --text-primary: #2b2924; --text-secondary: #6b6860; --text-muted: #9a978e;
+    --accent: #b5651d; --accent-hover: #9c5419; --on-accent: #ffffff;
+    --success-bg: #eaf3ea; --success-text: #2f6b2f; --success-border: #c2dcc2;
+    --warning-bg: #fdf3e3; --warning-text: #9a6a13; --warning-border: #f0dba8;
+    --danger-bg: #fbeae9; --danger-text: #a8362b; --danger-border: #f0c4c0;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text-primary); }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+  .header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 22px; }
+  .header h1 { font-size: 22px; font-weight: 600; margin: 0; }
+  .refresh-btn { background:#fff; border:1px solid var(--border-strong); border-radius:8px; padding:8px 16px; font-size:13px; cursor:pointer; color: var(--text-primary); }
+  .refresh-btn:hover { background: var(--bg); }
+  .filter-bar { display:flex; gap:8px; margin-bottom: 18px; }
+  .filter-pill { padding:7px 16px; border-radius:20px; border:1px solid var(--border-strong); cursor:pointer; font-size:13px; color:var(--text-secondary); background:#fff; }
+  .filter-pill.active { background: var(--text-primary); color:#fff; border-color: var(--text-primary); }
+  .stats { display:grid; grid-template-columns: repeat(4,1fr); gap:12px; margin-bottom: 20px; }
+  .stat-card { background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+  .stat-card .num { font-size:22px; font-weight:700; }
+  .stat-card .label { font-size:12px; color: var(--text-muted); margin-top:2px; }
+  .req-card { background:#fff; border:1px solid var(--border); border-radius:14px; margin-bottom:14px; overflow:hidden; }
+  .req-summary { display:flex; justify-content:space-between; align-items:center; padding:16px 18px; cursor:pointer; }
+  .req-summary-left .pr { font-family: monospace; font-size:12px; color: var(--text-muted); }
+  .req-summary-left .title { font-size:15px; font-weight:600; margin-top:2px; }
+  .req-summary-left .sub { font-size:13px; color: var(--text-secondary); margin-top:3px; }
+  .req-summary-right { display:flex; align-items:center; gap:12px; }
+  .total-val { font-size:15px; font-weight:600; }
+  .status-badge { font-size:12px; font-weight:600; padding: 5px 12px; border-radius: 20px; white-space:nowrap; }
+  .status-Pending { background: var(--warning-bg); color: var(--warning-text); }
+  .status-Approved { background: var(--success-bg); color: var(--success-text); }
+  .status-Rejected { background: var(--danger-bg); color: var(--danger-text); }
+  .urgency-tag { font-size:11px; font-weight:600; padding: 3px 9px; border-radius: 12px; margin-right: 6px; }
+  .urgency-normal { background: var(--success-bg); color: var(--success-text); }
+  .urgency-medium { background: var(--warning-bg); color: var(--warning-text); }
+  .urgency-urgent { background: var(--danger-bg); color: var(--danger-text); }
+  .chevron { color: var(--text-muted); font-size: 13px; transition: transform 0.15s; }
+  .req-detail { display:none; border-top:1px solid var(--border); padding: 18px; background: #fbfaf8; }
+  .req-detail.open { display:block; }
+  .detail-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; font-size: 13px; }
+  .detail-grid div span.label { color: var(--text-muted); display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px; }
+  table { width:100%; border-collapse: collapse; margin-bottom: 14px; }
+  th { font-size:11px; font-weight:600; color: var(--text-muted); text-align:left; padding: 0 8px 6px 0; border-bottom:1px solid var(--border); text-transform: uppercase; }
+  th:last-child, td:last-child { text-align:right; }
+  td { padding: 6px 8px 6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .justification-box { background:#fff; border:1px solid var(--border); border-radius:8px; padding:12px; font-size:13px; margin-bottom:16px; }
+  .decision-row { display:flex; gap:10px; align-items:center; }
+  .decision-row input { flex:1; padding:9px 11px; border-radius:8px; border:1px solid var(--border-strong); font-size:13px; }
+  .btn { padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight:600; cursor:pointer; border:none; white-space:nowrap; }
+  .btn-approve { background: var(--success-text); color:#fff; }
+  .btn-approve:hover { opacity:0.9; }
+  .btn-reject { background: var(--danger-text); color:#fff; }
+  .btn-reject:hover { opacity:0.9; }
+  .btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .decided-note { font-size:13px; color: var(--text-secondary); padding: 10px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; }
+  .empty-state { text-align:center; padding: 60px 0; color: var(--text-muted); }
+  .spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--border-strong); border-top-color: var(--accent); border-radius:50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background: var(--text-primary); color:#fff; padding:12px 22px; border-radius:9px; font-size:14px; opacity:0; pointer-events:none; transition: opacity 0.2s; z-index:999; }
+  .toast.show { opacity:1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <h1>Purchase requests — Admin</h1>
+    <button class="refresh-btn" onclick="loadRequests()">⟳ Refresh</button>
+  </div>
+
+  <div class="stats" id="statsBar"></div>
+
+  <div class="filter-bar">
+    <div class="filter-pill active" data-f="all" onclick="setFilter(this)">All</div>
+    <div class="filter-pill" data-f="Pending" onclick="setFilter(this)">Pending</div>
+    <div class="filter-pill" data-f="Approved" onclick="setFilter(this)">Approved</div>
+    <div class="filter-pill" data-f="Rejected" onclick="setFilter(this)">Rejected</div>
+  </div>
+
+  <div id="listContainer">
+    <div class="empty-state"><span class="spinner"></span></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ⚠️ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE (same as staff.html)
+  const API_URL = "https://script.google.com/macros/s/AKfycbzHiPpoeUCrEN50xE3h6h3hQ23wbXL04V6uA7l4sK11wyrerlOEW3UlDG6kNH7hRYuG/exec";
+
+  let allRequests = [];
+  let currentFilter = 'all';
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function setFilter(el) {
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    currentFilter = el.dataset.f;
+    render();
+  }
+
+  async function loadRequests() {
+    const container = document.getElementById('listContainer');
+    container.innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
+    if (API_URL.includes('PASTE_YOUR')) {
+      container.innerHTML = '<div class="empty-state">Setup needed: paste your Apps Script URL into API_URL at the top of the script.</div>';
+      return;
+    }
+    try {
+      const res = await fetch(`${API_URL}?action=list`);
+      allRequests = await res.json();
+      render();
+    } catch (err) {
+      container.innerHTML = '<div class="empty-state">Could not load requests. Check your connection or API URL.</div>';
+    }
+  }
+
+  function render() {
+    renderStats();
+    renderList();
+  }
+
+  function renderStats() {
+    const pending = allRequests.filter(r => r.Status === 'Pending').length;
+    const approved = allRequests.filter(r => r.Status === 'Approved').length;
+    const rejected = allRequests.filter(r => r.Status === 'Rejected').length;
+    document.getElementById('statsBar').innerHTML = `
+      <div class="stat-card"><div class="num">${allRequests.length}</div><div class="label">Total requests</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--warning-text)">${pending}</div><div class="label">Pending</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--success-text)">${approved}</div><div class="label">Approved</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--danger-text)">${rejected}</div><div class="label">Rejected</div></div>
+    `;
+  }
+
+  function renderList() {
+    const container = document.getElementById('listContainer');
+    let list = allRequests;
+    if (currentFilter !== 'all') {
+      list = list.filter(r => r.Status === currentFilter);
+    }
+    if (list.length === 0) {
+      container.innerHTML = '<div class="empty-state">No requests in this view.</div>';
+      return;
+    }
+    container.innerHTML = list.map((r, i) => {
+      const items = r['Items (JSON)'] || [];
+      const idx = allRequests.indexOf(r);
+      return `
+      <div class="req-card">
+        <div class="req-summary" onclick="toggleDetail(${idx})">
+          <div class="req-summary-left">
+            <div class="pr">${r['PR Number']} · ${new Date(r['Timestamp']).toLocaleDateString()}</div>
+            <div class="title">${r['Requested By']} — ${r['Department']}</div>
+            <div class="sub">
+              <span class="urgency-tag urgency-${r['Urgency']}">${r['Urgency']}</span>
+              ${items.length} item(s)
+            </div>
+          </div>
+          <div class="req-summary-right">
+            <span class="total-val">₹${Number(r['Total']).toFixed(2)}</span>
+            <span class="status-badge status-${r['Status']}">${r['Status']}</span>
+            <span class="chevron" id="chev-${idx}">▾</span>
+          </div>
+        </div>
+        <div class="req-detail" id="detail-${idx}">
+          <div class="detail-grid">
+            <div><span class="label">Project / Cost center</span>${r['Project'] || '—'}</div>
+            <div><span class="label">Required by</span>${r['Required By'] || '—'}</div>
+            <div><span class="label">Preferred supplier</span>${r['Supplier'] || '—'}</div>
+            <div><span class="label">Tax</span>₹${Number(r['Tax']).toFixed(2)}</div>
+          </div>
+          <table>
+            <thead><tr><th>Description</th><th>SKU</th><th>Qty</th><th>Unit</th><th>Price</th><th>Subtotal</th></tr></thead>
+            <tbody>
+              ${items.map(it => `
+                <tr>
+                  <td>${it.description}</td>
+                  <td>${it.sku || '—'}</td>
+                  <td>${it.qty}</td>
+                  <td>${it.unit}</td>
+                  <td>₹${Number(it.price).toFixed(2)}</td>
+                  <td>₹${(it.qty * it.price).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="justification-box"><strong>Justification:</strong> ${r['Justification'] || '—'}</div>
+          ${r['Status'] === 'Pending' ? `
+            <div class="decision-row">
+              <input type="text" id="md-${idx}" placeholder="MD approval name (optional)" />
+              <button class="btn btn-reject" onclick="decide(${idx}, 'Rejected')">Reject</button>
+              <button class="btn btn-approve" onclick="decide(${idx}, 'Approved')">Approve</button>
+            </div>
+          ` : `
+            <div class="decided-note">
+              ${r['Status']} ${r['MD Approval'] ? 'by ' + r['MD Approval'] : ''}
+              ${r['Decision Timestamp'] ? '· ' + new Date(r['Decision Timestamp']).toLocaleString() : ''}
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+    }).join('');
+  }
+
+  function toggleDetail(idx) {
+    const detail = document.getElementById('detail-' + idx);
+    const chev = document.getElementById('chev-' + idx);
+    const open = detail.classList.toggle('open');
+    chev.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+  }
+
+  async function decide(idx, status) {
+    const r = allRequests[idx];
+    const mdInput = document.getElementById('md-' + idx);
+    const mdApproval = mdInput ? mdInput.value.trim() : '';
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'decide',
+          prNumber: r['PR Number'],
+          status,
+          mdApproval
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`${r['PR Number']} marked as ${status}`);
+        r['Status'] = status;
+        r['MD Approval'] = mdApproval;
+        render();
+      } else {
+        showToast('Could not save decision. Try again.');
+      }
+    } catch (err) {
+      showToast('Network error — try again.');
+    }
+  }
+
+  loadRequests();
+</script>
+</body>
+</html>
